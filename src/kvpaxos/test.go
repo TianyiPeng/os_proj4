@@ -31,16 +31,21 @@ var numberInsert, numberInsertSuccess, numberGet int
 var insertTotTime, getTotTime float64
 var insertTime, getTime []float64
  
-func Insert(key, value, server_address, request_id string) (string, string){
-
-	//PrintLog("debug", "insert " + key + " " + value + " " + server_address)
+func Insert(key, value, server_address string, request_id int64) (string, string){
 	numberInsert ++
-	
 	startTime := time.Now()
-	response, err := http.PostForm("http://" + server_address + "/kv/insert", 
-    	url.Values{"key": {key}, "value": {value}, "requestid" : {request_id}})
-    	endTime := time.Now()
-    	duration := endTime.Sub(startTime).Seconds()
+	var response *http.Response
+	var err error
+	if(request_id < 0) {
+		response, err = http.PostForm("http://" + server_address + "/kv/insert", 
+    		url.Values{"key": {key}, "value": {value}})
+	} else{
+		requestid := strconv.FormatInt(request_id, 10)
+		response, err = http.PostForm("http://" + server_address + "/kv/insert", 
+    		url.Values{"key": {key}, "value": {value}, "requestid" : {requestid}})
+	}
+    endTime := time.Now()
+    duration := endTime.Sub(startTime).Seconds()
  	
  	insertTotTime += duration
 	insertTime = append(insertTime, duration)
@@ -94,9 +99,17 @@ func InsertFalse(key,value,server_address string) {
 	response.Body.Close()
 }
 
-func Delete(key, server_address, request_id  string) (string, string, string){
-	response, err := http.PostForm("http://" + server_address + "/kv/delete", 
-    	url.Values{"key": {key}, "requestid" : {request_id}})
+func Delete(key, server_address string, request_id int64) (string, string, string){
+	var response *http.Response
+	var err error
+	if(request_id < 0) {
+		response, err = http.PostForm("http://" + server_address + "/kv/delete", 
+    		url.Values{"key": {key}})
+	} else {
+		requestid := strconv.FormatInt(request_id, 10)
+		response, err = http.PostForm("http://" + server_address + "/kv/delete", 
+    		url.Values{"key": {key}, "requestid" : {requestid}})
+	}
   	if err != nil {
     	if MODE == "debug" {
     		fmt.Println("Post Delete: ", err.Error())
@@ -120,13 +133,19 @@ func Delete(key, server_address, request_id  string) (string, string, string){
 	return "",ret.Success,ret.Value
 }
 
-func Get(key, server_address, request_id string) (string,string,string){
+func Get(key, server_address string, request_id int64) (string,string,string){
 	numberGet ++
-	
 	startTime := time.Now()
-	response, err := http.Get("http://" + server_address + "/kv/get?key=" + key + "&requestid=" + request_id)
+	var response *http.Response
+	var err error
+	if(request_id < 0) {
+		response, err = http.Get("http://" + server_address + "/kv/get?key=" + key)
+	} else{
+		requestid := strconv.FormatInt(request_id, 10)
+		response, err = http.Get("http://" + server_address + "/kv/get?key=" + key + "&requestid=" + requestid)
+	}
 	endTime := time.Now()
-    	duration := endTime.Sub(startTime).Seconds()
+    duration := endTime.Sub(startTime).Seconds()
  	
  	getTotTime += duration
 	getTime = append(getTime, duration)
@@ -146,7 +165,6 @@ func Get(key, server_address, request_id string) (string,string,string){
 	}
 	var ret Get
 	dec.Decode(&ret)
-//	fmt.Println(ret.Success + ":" + ret.Value + ":" + ret.Error)
 
 	io.Copy(ioutil.Discard, response.Body)
 	response.Body.Close()
@@ -155,9 +173,17 @@ func Get(key, server_address, request_id string) (string,string,string){
 }
 
 var checkCondition = 13
-func Update(key, value, server_address, request_id string) (string,string){
-	response, err := http.PostForm("http://" + server_address + "/kv/update", 
-    	url.Values{"key": {key}, "value": {value}, "requestid" : {request_id}})
+func Update(key, value, server_address string, request_id int64) (string,string){
+	var response *http.Response
+	var err error
+	if(request_id < 0) {
+		response, err = http.PostForm("http://" + server_address + "/kv/update", 
+    		url.Values{"key": {key}, "value": {value}})
+	} else {
+		requestid := strconv.FormatInt(request_id, 10)
+		response, err = http.PostForm("http://" + server_address + "/kv/update", 
+    		url.Values{"key": {key}, "value": {value}, "requestid" : {requestid}})
+	}
   	if err != nil {
     	if MODE == "debug" {
     		fmt.Println("Post Update: ", err.Error())
@@ -329,33 +355,33 @@ func Equal(a,b map[string]string) bool {
 }
 
 func BasicTest() {
-	Insert("1", "1", servers[0], "")
-	Insert("11", "11", servers[0], "")
-	Insert("2", "2", servers[1], "")
-	Insert("3", "3", servers[2], "")
-	Delete("2", servers[2], "")
-	Update("11", "111", servers[1], "")
-	Get("3", servers[0], "")
+	Insert("1", "1", servers[0], -1)
+	Insert("11", "11", servers[0], -1)
+	Insert("2", "2", servers[1], -1)
+	Insert("3", "3", servers[2], -1)
+	Delete("2", servers[2], -1)
+	Update("11", "111", servers[1], -1)
+	Get("3", servers[0], -1)
 	for i := 1; i <= 100; i++ {
 		operation_type := rand.Intn(5)
 		server_id := rand.Intn(3)
 		if operation_type == 0 {//insert
 			key := strconv.Itoa(rand.Intn(100))
 			value := strconv.Itoa(rand.Intn(100))
-			Insert(key, value, servers[server_id], "")
+			Insert(key, value, servers[server_id], -1)
 		}
 		if operation_type == 1 {//delete
 			key := strconv.Itoa(rand.Intn(100))
-			Delete(key, servers[server_id], "")
+			Delete(key, servers[server_id], -1)
 		}
 		if operation_type == 2 {//update
 			key := strconv.Itoa(rand.Intn(100))
 			value := strconv.Itoa(rand.Intn(100))
-			Update(key, value, servers[server_id], "")
+			Update(key, value, servers[server_id], -1)
 		}
 		if operation_type == 3 {//get
 			key := strconv.Itoa(rand.Intn(100))
-			Get(key, servers[server_id], "")
+			Get(key, servers[server_id], -1)
 		}
 		if operation_type == 4 {//dump
 			time.Sleep(time.Millisecond * 100)
@@ -367,8 +393,18 @@ func BasicTest() {
 			}
 		}
 	}
+}
 
-
+func RequestidTest() {
+	Insert("RequestidTest", "aaa", servers[0], 111)
+	Update("RequestidTest", "trueanswer", servers[0], 222)
+	Update("RequestidTest", "bbb", servers[1], 222)
+	time.Sleep(time.Second)
+	_, _, value := Get("RequestidTest", servers[0], -1)
+	if (value != "trueanswer") {
+		fmt.Println("RequestidTest value:", value)
+		TestFail("RequestidTest")
+	}
 }
 
 func TestFail(place string) {
@@ -417,7 +453,8 @@ func main() {
 	servers = DecodeConfig()
 	fmt.Println(servers)
 
-	BasicTest()	
+	//BasicTest()	
+	RequestidTest()
 	KillAll()
 	TestSucceed()
 	

@@ -220,8 +220,8 @@ func HandleInsert(w http.ResponseWriter, request *http.Request) {
 	var value string = value_list[0]
 
 	var id string
-	if (id_ok && len(id_list) == 1 && id_list[0] != "") {
-		id = request.RemoteAddr + id_list[0]
+	if id_ok && len(id_list) == 1 && id_list[0] != "" {
+		id = id_list[0]
 	} else {
 		id = "-1"
 	}
@@ -268,7 +268,7 @@ func HandleDelete(w http.ResponseWriter, request *http.Request) {
 
 	var id string
 	if id_ok && len(id_list) == 1 && id_list[0] != "" {
-		id = request.RemoteAddr + id_list[0]
+		id = id_list[0]
 	} else {
 		id = "-1"
 	}
@@ -311,10 +311,9 @@ func HandleGet(w http.ResponseWriter, request *http.Request) {
 
 	var key string = key_list[0]
 
-
 	var id string
 	if id_ok && len(id_list) == 1 && id_list[0] != "" {
-		id = request.RemoteAddr + id_list[0]
+		id = id_list[0]
 	} else {
 		id = "-1"
 	}
@@ -364,7 +363,7 @@ func HandleUpdate(w http.ResponseWriter, request *http.Request) {
 	
 	var id string
 	if id_ok && len(id_list) == 1 && id_list[0] != "" {
-		id = request.RemoteAddr + id_list[0]
+		id = id_list[0]
 	} else {
 		id = "-1"
 	}
@@ -404,7 +403,6 @@ func HandleCountKey(w http.ResponseWriter, request *http.Request) {
 }
 
 func HandleDump(w http.ResponseWriter, request *http.Request) {
-	
 	if isDead {
 		return
 	}
