@@ -7,11 +7,42 @@ import urllib2
 import time
 
 def start_server(nodeID):
+		
+	settings = json.loads(open("../../conf/settings.conf").read())
 	
-	pid = os.fork()
-	if pid == 0:
-		os.execl("server", nodeID)
-		sys.exit(0)
+	address = "http://" + settings["n"+nodeID] + ":" + settings["port"]
+	
+	
+	
+	cnt = 0
+	
+	try:
+		urllib2.urlopen(server_address + "/kvman/check")
+	except Exception as e:
+		cnt = cnt + 1
+	
+	try:
+		urllib2.urlopen(server_address + "/kvman/check")
+	except Exception as e:
+		cnt = cnt + 1
+	
+	try:
+		urllib2.urlopen(server_address + "/kvman/check")
+	except Exception as e:
+		cnt = cnt + 1
+	
+	if cnt == 3:
+		pid = os.fork()
+		if pid == 0:
+			os.execl("server", nodeID)
+			sys.exit(0)
+	else:
+		while True:
+			try:
+				urllib2.urlopen(server_address + "/kvman/restart")
+				break
+			except Exception as e:
+				time.sleep(0.01)
 	time.sleep(0.01)
 	sys.exit(0)
 

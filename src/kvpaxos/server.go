@@ -387,6 +387,12 @@ func HandleDefault(w http.ResponseWriter, request *http.Request) {
 	fmt.Fprintf(w, "Hello,"+request.URL.Path[1:])
 }
 
+func HandleCheck(w http.ResponseWriter, request *http.Request) {
+	fmt.Println("In HandleCheck")
+	fmt.Fprintf(w, "Check Success!")
+}
+
+
 func HandleCountKey(w http.ResponseWriter, request *http.Request) {
 	
 	total_key := strconv.Itoa(len(DataBase.data))
@@ -399,6 +405,9 @@ func HandleCountKey(w http.ResponseWriter, request *http.Request) {
 
 func HandleDump(w http.ResponseWriter, request *http.Request) {
 	
+	if isDead {
+		return
+	}
 	if(request.ParseForm() != nil) {
 		fmt.Fprintln(w, UnsuccessResponse("In HandleUpdate, fail to parse URL"))
 		PrintLog(MODE, "In HandleUpdate, fail to parse URL")
@@ -480,6 +489,7 @@ func main() {
 	go http.HandleFunc("/kvman/dump", HandleDump)
 	go http.HandleFunc("/kvman/shutdown", HandleShutdown)
 	go http.HandleFunc("/kvman/restart", HandleRestart)
+	go http.HandleFunc("/kvman/check", HandleCheck)
 	
 	gob.Register(ProposeValue{})
 	
