@@ -220,7 +220,7 @@ func HandleInsert(w http.ResponseWriter, request *http.Request) {
 	var value string = value_list[0]
 
 	var id string
-	if (id_ok && len(id_list) == 1) {
+	if (id_ok && len(id_list) == 1 && id_list[0] != "") {
 		id = request.RemoteAddr + id_list[0]
 	} else {
 		id = "-1"
@@ -267,7 +267,7 @@ func HandleDelete(w http.ResponseWriter, request *http.Request) {
 	var key string = key_list[0]
 
 	var id string
-	if id_ok && len(id_list) == 1 {
+	if id_ok && len(id_list) == 1 && id_list[0] != "" {
 		id = request.RemoteAddr + id_list[0]
 	} else {
 		id = "-1"
@@ -313,7 +313,7 @@ func HandleGet(w http.ResponseWriter, request *http.Request) {
 
 
 	var id string
-	if id_ok && len(id_list) == 1 {
+	if id_ok && len(id_list) == 1 && id_list[0] != "" {
 		id = request.RemoteAddr + id_list[0]
 	} else {
 		id = "-1"
@@ -363,7 +363,7 @@ func HandleUpdate(w http.ResponseWriter, request *http.Request) {
 	var value string = value_list[0]
 	
 	var id string
-	if id_ok && len(id_list) == 1 {
+	if id_ok && len(id_list) == 1 && id_list[0] != "" {
 		id = request.RemoteAddr + id_list[0]
 	} else {
 		id = "-1"
@@ -494,7 +494,7 @@ func main() {
 	gob.Register(ProposeValue{})
 	
 	var err error
-	me, err = strconv.Atoi(os.Args[0])
+	me, err = strconv.Atoi(os.Args[0][1:3])
 	me = me - 1
 	meStr = strconv.Itoa(me)
 	

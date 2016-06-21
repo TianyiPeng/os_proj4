@@ -31,14 +31,14 @@ var numberInsert, numberInsertSuccess, numberGet int
 var insertTotTime, getTotTime float64
 var insertTime, getTime []float64
  
-func Insert(key,value,server_address string) (string, string){
+func Insert(key, value, server_address, request_id string) (string, string){
 
 	//PrintLog("debug", "insert " + key + " " + value + " " + server_address)
 	numberInsert ++
 	
 	startTime := time.Now()
 	response, err := http.PostForm("http://" + server_address + "/kv/insert", 
-    	url.Values{"key": {key}, "value": {value}})
+    	url.Values{"key": {key}, "value": {value}, "requestid" : {request_id}})
     	endTime := time.Now()
     	duration := endTime.Sub(startTime).Seconds()
  	
@@ -94,9 +94,9 @@ func InsertFalse(key,value,server_address string) {
 	response.Body.Close()
 }
 
-func Delete(key,server_address string) (string, string, string){
+func Delete(key, server_address, request_id  string) (string, string, string){
 	response, err := http.PostForm("http://" + server_address + "/kv/delete", 
-    	url.Values{"key": {key}})
+    	url.Values{"key": {key}, "requestid" : {request_id}})
   	if err != nil {
     	if MODE == "debug" {
     		fmt.Println("Post Delete: ", err.Error())
@@ -120,11 +120,11 @@ func Delete(key,server_address string) (string, string, string){
 	return "",ret.Success,ret.Value
 }
 
-func Get(key,server_address string) (string,string,string){
+func Get(key, server_address, request_id string) (string,string,string){
 	numberGet ++
 	
 	startTime := time.Now()
-	response, err := http.Get("http://" + server_address + "/kv/get?key=" + key)
+	response, err := http.Get("http://" + server_address + "/kv/get?key=" + key + "&requestid=" + request_id)
 	endTime := time.Now()
     	duration := endTime.Sub(startTime).Seconds()
  	
@@ -155,9 +155,9 @@ func Get(key,server_address string) (string,string,string){
 }
 
 var checkCondition = 13
-func Update(key,value,server_address string) (string,string){
+func Update(key, value, server_address, request_id string) (string,string){
 	response, err := http.PostForm("http://" + server_address + "/kv/update", 
-    	url.Values{"key": {key}, "value": {value}})
+    	url.Values{"key": {key}, "value": {value}, "requestid" : {request_id}})
   	if err != nil {
     	if MODE == "debug" {
     		fmt.Println("Post Update: ", err.Error())
@@ -329,35 +329,36 @@ func Equal(a,b map[string]string) bool {
 }
 
 func BasicTest() {
-	Insert("1", "1", servers[0])
-	Insert("11", "11", servers[0])
-	Insert("2", "2", servers[1])
-	Insert("3", "3", servers[2])
-	Delete("2", servers[2])
-	Update("11", "111", servers[1])
-	Get("3", servers[0])
+	Insert("1", "1", servers[0], "")
+	Insert("11", "11", servers[0], "")
+	Insert("2", "2", servers[1], "")
+	Insert("3", "3", servers[2], "")
+	Delete("2", servers[2], "")
+	Update("11", "111", servers[1], "")
+	Get("3", servers[0], "")
 	for i := 1; i <= 100; i++ {
 		operation_type := rand.Intn(5)
 		server_id := rand.Intn(3)
 		if operation_type == 0 {//insert
 			key := strconv.Itoa(rand.Intn(100))
 			value := strconv.Itoa(rand.Intn(100))
-			Insert(key, value, servers[server_id])
+			Insert(key, value, servers[server_id], "")
 		}
 		if operation_type == 1 {//delete
 			key := strconv.Itoa(rand.Intn(100))
-			Delete(key, servers[server_id])
+			Delete(key, servers[server_id], "")
 		}
 		if operation_type == 2 {//update
 			key := strconv.Itoa(rand.Intn(100))
 			value := strconv.Itoa(rand.Intn(100))
-			Update(key, value, servers[server_id])
+			Update(key, value, servers[server_id], "")
 		}
 		if operation_type == 3 {//get
 			key := strconv.Itoa(rand.Intn(100))
-			Get(key, servers[server_id])
+			Get(key, servers[server_id], "")
 		}
 		if operation_type == 4 {//dump
+			time.Sleep(time.Millisecond * 100)
 			_, data_0 := Dump(servers[0])	
 			_, data_1 := Dump(servers[1])
 			_, data_2 := Dump(servers[2])
@@ -371,6 +372,7 @@ func BasicTest() {
 }
 
 func TestFail(place string) {
+	KillAll()
 	fmt.Println("Failed in " + place + "!")
 	os.Exit(0)
 }
@@ -408,9 +410,9 @@ func  TestSucceed() {
 func main() {
 	rand.Seed(time.Now().UnixNano())  
 	
-	StartServer("1")
-	StartServer("2")
-	StartServer("3")
+	StartServer("n01")
+	StartServer("n02")
+	StartServer("n03")
 	
 	servers = DecodeConfig()
 	fmt.Println(servers)

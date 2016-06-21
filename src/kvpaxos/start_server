@@ -10,7 +10,7 @@ def start_server(nodeID):
 		
 	settings = json.loads(open("../../conf/settings.conf").read())
 	
-	address = "http://" + settings["n"+nodeID] + ":" + settings["port"]
+	address = "http://" + settings[nodeID] + ":" + settings["port"]
 	
 	
 	
