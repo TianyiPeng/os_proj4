@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"time"
 	"math/rand"
-//	"strconv"
 )
 
 var totalServer int
@@ -92,11 +91,6 @@ func (px *Paxos) Min() int {
 	return px.minimumSeq
 }
 
-func PrintLog(condition string, log_content string) {
-	if(condition == "debug") {
-		fmt.Println("paxos: " + log_content)
-	}
-}
 
 func (px *Paxos) PrepareHandler(args *PrepareMessage, reply *PrepareACK) error {
 	
@@ -165,7 +159,6 @@ func (px *Paxos) DecidedHandler(args *DecidedMessage, reply *string) error {
 	px.lock.Lock()
 	defer px.lock.Unlock()
 	
-	//PrintLog("debug", "decided : server " + strconv.Itoa(px.me))
 	//fmt.Println("decide", px.me, px.peers[px.me])
 	if args.Seq > px.maximumSeq {
 		tmp := args.Seq - px.maximumSeq
