@@ -397,12 +397,11 @@ func BasicTest() {
 
 func RequestidTest() {
 	Insert("RequestidTest", "aaa", servers[0], 111)
-	Update("RequestidTest", "trueanswer", servers[0], 222)
-	Update("RequestidTest", "bbb", servers[1], 222)
+	Delete("RequestidTest", servers[0], 222)
+	Insert("RequestidTest", "aa", servers[1], 111)
 	time.Sleep(time.Second)
-	_, _, value := Get("RequestidTest", servers[0], -1)
-	if (value != "trueanswer") {
-		fmt.Println("RequestidTest value:", value)
+	_, success, _ := Get("RequestidTest", servers[0], -1)
+	if (success == "true") {
 		TestFail("RequestidTest")
 	}
 }
