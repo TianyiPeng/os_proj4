@@ -17,7 +17,7 @@ import (
 	"sort"
 )
 
-const MODE = "debug"
+const MODE = "run"
 
 var servers []string
 
@@ -270,8 +270,6 @@ func Shutdown(address string) string{
 }
 
 func StartServer(argument string) string{
-	
-	//PrintLog("debug", "test")
 	cmd := exec.Command("./start_server", argument)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -295,6 +293,19 @@ func StopServer(address string) string{
 	response.Body.Close()
 	return ""
 }
+
+func StopServerByScript(argument string) string{
+	cmd := exec.Command("./stop_server", argument)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		PrintLog(MODE, err.Error())
+		return "error"
+	}
+	return ""
+}
+
 
 func KillAll() string {
 	cmd := exec.Command("killall", "server")
@@ -321,9 +332,6 @@ func DecodeConfig() (serverPeers []string) {
 		fmt.Println("Parse config file error")
 		log.Fatal("Parse config file(Json): ", err.Error())
 	}
-	/*for v := range(config) {
-		PrintLog("debug", v)
-	}*/
 	M := len(config) - 1
 	serverPeers = make([]string, M, M)
 	
@@ -362,7 +370,7 @@ func BasicTest() {
 	Delete("2", servers[2], -1)
 	Update("11", "111", servers[1], -1)
 	Get("3", servers[0], -1)
-	for i := 1; i <= 100; i++ {
+	for i := 1; i <= 1000; i++ {
 		operation_type := rand.Intn(5)
 		server_id := rand.Intn(3)
 		if operation_type == 0 {//insert
@@ -403,6 +411,34 @@ func RequestidTest() {
 	_, success, _ := Get("RequestidTest", servers[0], -1)
 	if (success == "true") {
 		TestFail("RequestidTest")
+	}
+}
+
+func StopServerTest() {
+	Insert("111", "aaa", servers[0], -1)
+	StopServerByScript("n01")
+	time.Sleep(time.Millisecond*100)
+	err, _ := Update("111", "bbb", servers[0], -1)
+	if(err != "error") {
+		TestFail("StopServerTest0")
+	}
+	StopServerByScript("n02")
+	time.Sleep(time.Millisecond*100)
+	_, _, value := Get("111", servers[2], -1)
+	if(value != "aaa") {
+		TestFail("StopServerTest1")
+	}
+	err, _ = Insert("222", "abcd", servers[0], -1)
+	if(err != "error") {
+		TestFail("StopServerTest2")
+	}
+	Insert("222", "xyz", servers[2], -1)
+	StartServer("n01")
+	StartServer("n02")
+	time.Sleep(time.Millisecond*100)
+	_, _, value = Get("222", servers[1], -1)
+	if(value != "xyz") {
+		TestFail("StopServerTest3")
 	}
 }
 
@@ -452,8 +488,10 @@ func main() {
 	servers = DecodeConfig()
 	fmt.Println(servers)
 
-	//BasicTest()	
+	StopServerTest()
+	BasicTest()	
 	RequestidTest()
+
 	KillAll()
 	TestSucceed()
 	

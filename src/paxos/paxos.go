@@ -1,4 +1,4 @@
-package main
+package paxos
 
 import (
 	"net"
@@ -106,8 +106,9 @@ func (px *Paxos) PrepareHandler(args *PrepareMessage, reply *PrepareACK) error {
 		px.maximumSeq = args.Seq
 	}
 	
-	//fmt.Println("prepare", px.me, px.peers[px.me])
+	
 	p := px.instance[args.Seq]
+	//fmt.Println("prepare", args.PrepareN, p.PrepareN)
 	
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -118,7 +119,7 @@ func (px *Paxos) PrepareHandler(args *PrepareMessage, reply *PrepareACK) error {
 		reply.ProposeV = p.ProposeV	
 	} else {
 		reply.Mes = "reject"
-		reply.ProposeN = p.ProposeN
+		reply.ProposeN = p.PrepareN
 	}
 	return nil
 }
@@ -218,7 +219,9 @@ func (px *Paxos) Propose(seq int, value interface{}, p *PaxosInstance) {
 			return 
 		}
 		px.lock.Unlock()
-		
+
+
+		//fmt.Println("currentMaxN", currentMaxN, "totalServer",totalServer)
 		chooseN := (currentMaxN / totalServer + 1) * totalServer + px.me
 		mes := &PrepareMessage{seq, chooseN}
 		var prepareReply []*PrepareACK = make([]*PrepareACK, totalServer, totalServer)
@@ -257,10 +260,10 @@ func (px *Paxos) Propose(seq int, value interface{}, p *PaxosInstance) {
 			}
 		}
 		
-		
 		//fmt.Println(px.me, cnt, tmpMaxN, tmpValue)
 		if cnt >= 0 {
 			continue;
+			//break;
 		}
 		
 		
@@ -421,6 +424,7 @@ func Make(peers []string, me int) *Paxos {
 	
 	newServer := rpc.NewServer()
 	newServer.Register(px)
+	//fmt.Println(peers[me])
 	l, e := net.Listen("tcp", peers[me])
 	if e != nil {
 			log.Fatal("listen error: ", e)

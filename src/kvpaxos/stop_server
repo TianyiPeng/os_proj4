@@ -6,11 +6,11 @@ import json
 import urllib2
 
 if __name__ == "__main__":
-	settings = json.loads(open("../../conf/settings.conf").read())
-	
-	address = "http://" + settings["n"+nodeID] + ":" + settings["port"]
 
 	if len(sys.argv) == 2:
+		nodeID = sys.argv[1]
+		settings = json.loads(open("../../conf/settings.conf").read())
+		address = "http://" + settings[nodeID] + ":" + settings["port"]
 		urllib2.urlopen(address + "/kvman/shutdown")
 		quit()
 	

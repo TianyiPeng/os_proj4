@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"log"
 	"encoding/json"
-	//"net/rpc"
 	"io/ioutil"
 	"strings"
 	"sync"
@@ -49,12 +48,13 @@ var idData map[string]bool = make(map[string]bool)
 var idDataValue map[string]string = make(map[string]string)
 
 var isDead bool
+var isDeadLock sync.Mutex
 
-const MODE = "debug"
+const MODE = "run"
 
 func PrintLog(condition string, log_content string) {
 	if(condition == "debug") {
-		fmt.Println("In server " + meStr + ": " + log_content)
+		fmt.Println("In server " + ": " + log_content)
 	}
 }
 
@@ -136,11 +136,13 @@ func queueAdd(seq int, v ProposeValue) {
 func queueDelete(seq int) (v ProposeValue) {
 	queueLock.Lock()
 	if len(queue) <= seq {
-		queue = append(queue, make(chan ProposeValue))
+		queue = append(queue, make(chan ProposeValue, 1))
 	}
 	queueLock.Unlock()
 	
-	v = <- queue[seq]
+	//v.Me == -1
+	//if(queue[seq] != nil) {
+		v = <- queue[seq]
 	queue[seq] = nil
 	return v
 }
@@ -155,21 +157,28 @@ func WaitDecided(mes string, id string, me int, key string, value string) (bool,
 	v.Value = value
 	
 	for {
-		//PrintLog("debug", "start try paxos instance")
+		PrintLog(MODE, "start try paxos instance")
 		seqLock.Lock()
 	 	seq++
 		seq1 := seq
 		seqLock.Unlock()
 		v.Seq = seq1
-		px.Start(seq1, v)
+				//fmt.Println(v.Key, v.Value)
 
+		px.Start(seq1, v)
+//fmt.Println(v.Key, v.Value)
+//time.Sleep(time.Second*10)
+//decide, _ := px.Status(seq1)
+//fmt.Println(decide)
 		v1 := queueDelete(seq1)
+//fmt.Println(v1.Key, v1.Value)
+		//if(v) {
 		//PrintLog("debug", "try paxos instance, get a decided value")
 		//fmt.Println(v.Me, v1.Me, v.Seq, v1.Seq)
 		if (v.Me == v1.Me && v.Seq == v1.Seq) {
 			return v1.Succ, v1.Value
 		}
-		
+		//}
 	}
 }
 
@@ -198,8 +207,13 @@ func Insert(key, value string) bool {
 
 
 func HandleInsert(w http.ResponseWriter, request *http.Request) {
-	
-	//PrintLog("debug", "before insert")
+	isDeadLock.Lock()
+	if(isDead) {
+		isDeadLock.Unlock()
+		http.Error(w, "connection closed", 0)
+		return
+	}
+	isDeadLock.Unlock()
 	
 	if(request.ParseForm() != nil) {
 		fmt.Fprintln(w, UnsuccessResponse("In HandleInsert, fail to parse URL"))
@@ -251,6 +265,15 @@ func Delete(key string) (bool, string) {
 }
 
 func HandleDelete(w http.ResponseWriter, request *http.Request) {
+	isDeadLock.Lock()
+	if(isDead) {
+		isDeadLock.Unlock()
+		http.Error(w, "connection closed", 0)
+		return
+	}
+	isDeadLock.Unlock()
+	
+
 	if(request.ParseForm() != nil) {
 		fmt.Fprintln(w, UnsuccessResponse("In HandleDelete, fail to parse URL"))
 		PrintLog(MODE, "In HandleDelete, fail to parse URL")
@@ -297,6 +320,16 @@ func Get(key string) (bool, string) {
 }
 
 func HandleGet(w http.ResponseWriter, request *http.Request) {
+	isDeadLock.Lock()
+	if(isDead) {
+		isDeadLock.Unlock()
+		http.Error(w, "connection closed", 0)
+		return
+	}
+	isDeadLock.Unlock()
+	
+	//PrintLog(MODE, "Receiving get request")
+
 	if(request.ParseForm() != nil) {
 		fmt.Fprintln(w, UnsuccessResponse("In HandleGet, fail to parse URL"))
 		PrintLog(MODE, "In HandleGet, fail to parse URL")
@@ -309,6 +342,8 @@ func HandleGet(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+
+	//PrintLog(MODE, "Start get request")	
 	var key string = key_list[0]
 
 	var id string
@@ -327,8 +362,9 @@ func HandleGet(w http.ResponseWriter, request *http.Request) {
 				
 	json_encode, _ := json.Marshal(map[string]string{
 		"success":"true", "value":get_value,
-	})		
-	fmt.Fprintln(w, string(json_encode))		
+	})	
+
+	fmt.Fprintln(w, string(json_encode))	
 
 }
 
@@ -344,6 +380,14 @@ func Update(key string, value string) (bool) {
 }
 
 func HandleUpdate(w http.ResponseWriter, request *http.Request) {
+	isDeadLock.Lock()
+	if(isDead) {
+		isDeadLock.Unlock()
+		http.Error(w, "connection closed", 0)
+		return
+	}
+	isDeadLock.Unlock()
+	
 	if(request.ParseForm() != nil) {
 		fmt.Fprintln(w, UnsuccessResponse("In HandleUpdate, fail to parse URL"))
 		PrintLog(MODE, "In HandleUpdate, fail to parse URL")
@@ -381,19 +425,20 @@ func HandleUpdate(w http.ResponseWriter, request *http.Request) {
 	fmt.Fprintln(w, string(json_encode))		
 }
 
-func HandleDefault(w http.ResponseWriter, request *http.Request) {
-	fmt.Println("In HandleDefault")
-	fmt.Fprintf(w, "Hello,"+request.URL.Path[1:])
-}
-
 func HandleCheck(w http.ResponseWriter, request *http.Request) {
-	fmt.Println("In HandleCheck")
+	PrintLog(MODE, "In HandleCheck")
 	fmt.Fprintf(w, "Check Success!")
 }
 
 
 func HandleCountKey(w http.ResponseWriter, request *http.Request) {
-	
+	isDeadLock.Lock()
+	if(isDead) {
+		isDeadLock.Unlock()
+		return
+	}
+	isDeadLock.Unlock()
+
 	total_key := strconv.Itoa(len(DataBase.data))
 	PrintLog(MODE, "inquiring count key : " + total_key)
 	ret, _ := json.Marshal(map[string]string{
@@ -403,9 +448,13 @@ func HandleCountKey(w http.ResponseWriter, request *http.Request) {
 }
 
 func HandleDump(w http.ResponseWriter, request *http.Request) {
-	if isDead {
+	isDeadLock.Lock()
+	if(isDead) {
+		isDeadLock.Unlock()
 		return
 	}
+	isDeadLock.Unlock()
+
 	if(request.ParseForm() != nil) {
 		fmt.Fprintln(w, UnsuccessResponse("In HandleUpdate, fail to parse URL"))
 		PrintLog(MODE, "In HandleUpdate, fail to parse URL")
@@ -434,12 +483,18 @@ func HandleDump(w http.ResponseWriter, request *http.Request) {
 func HandleShutdown(w http.ResponseWriter, request *http.Request) {
 	//DataBase.Lock()
 	PrintLog(MODE, "shutdown")
+	isDeadLock.Lock()
 	isDead = true
+	isDeadLock.Unlock()
 }
+
 func HandleRestart(w http.ResponseWriter, request *http.Request) {
 	//DataBase.Lock()
 	PrintLog(MODE, "restart")
+	isDeadLock.Lock()
 	isDead = false
+	isDeadLock.Unlock()
+	fmt.Fprintf(w, "Restarted")
 }
 
 func DecodeConfig() (serverPeers, paxosPeers []string) {
@@ -478,7 +533,6 @@ func DecodeConfig() (serverPeers, paxosPeers []string) {
 }
 
 func main() {
-	go http.HandleFunc("/", HandleDefault)
 	go http.HandleFunc("/kv/insert", HandleInsert)
 	go http.HandleFunc("/kv/delete", HandleDelete)
 	go http.HandleFunc("/kv/get", HandleGet)
@@ -512,7 +566,6 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
 	}
-
 	
 	os.Exit(0) //why need os.Exit?
 }

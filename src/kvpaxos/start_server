@@ -10,9 +10,7 @@ def start_server(nodeID):
 		
 	settings = json.loads(open("../../conf/settings.conf").read())
 	
-	address = "http://" + settings[nodeID] + ":" + settings["port"]
-	
-	
+	server_address = "http://" + settings[nodeID] + ":" + settings["port"]
 	
 	cnt = 0
 	
@@ -51,4 +49,3 @@ if __name__ == "__main__":
 		start_server(sys.argv[1])
 
 	print "Please specify the argument: <node id>"
-
