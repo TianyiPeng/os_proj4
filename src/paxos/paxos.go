@@ -222,7 +222,7 @@ func (px *Paxos) Propose(seq int, value interface{}, p *PaxosInstance) {
 
 
 		//fmt.Println("currentMaxN", currentMaxN, "totalServer",totalServer)
-		chooseN := (currentMaxN / totalServer + 1) * totalServer + px.me
+		chooseN := (currentMaxN / totalServer + 1) * totalServer + px.me + 3
 		mes := &PrepareMessage{seq, chooseN}
 		var prepareReply []*PrepareACK = make([]*PrepareACK, totalServer, totalServer)
 		for i := 0; i < totalServer; i++ {

@@ -19,6 +19,7 @@ Our tests are two parts:
 
 For kvpaxos test:
 Our kvpaxos test are in ./src/kvpaxos/test.go, just run test
+(Our test takes a bit long time(approxiamately 1min), please wait)
 
 
 

@@ -435,6 +435,7 @@ func HandleCountKey(w http.ResponseWriter, request *http.Request) {
 	isDeadLock.Lock()
 	if(isDead) {
 		isDeadLock.Unlock()
+		http.Error(w, "connection closed", 0)
 		return
 	}
 	isDeadLock.Unlock()
@@ -451,6 +452,7 @@ func HandleDump(w http.ResponseWriter, request *http.Request) {
 	isDeadLock.Lock()
 	if(isDead) {
 		isDeadLock.Unlock()
+		http.Error(w, "connection closed", 0)
 		return
 	}
 	isDeadLock.Unlock()
@@ -481,7 +483,13 @@ func HandleDump(w http.ResponseWriter, request *http.Request) {
 }
 
 func HandleShutdown(w http.ResponseWriter, request *http.Request) {
-	//DataBase.Lock()
+	isDeadLock.Lock()
+	if(isDead) {
+		isDeadLock.Unlock()
+		http.Error(w, "connection closed", 0)
+		return
+	}
+	isDeadLock.Unlock()
 	PrintLog(MODE, "shutdown")
 	isDeadLock.Lock()
 	isDead = true
