@@ -506,7 +506,7 @@ func HandleRestart(w http.ResponseWriter, request *http.Request) {
 }
 
 func DecodeConfig() (serverPeers, paxosPeers []string) {
-	config_file, err := ioutil.ReadFile("../../conf/settings.conf")
+	config_file, err := ioutil.ReadFile("conf/settings.conf")
 	if err != nil{
 		fmt.Println("Load config file error")
 		log.Fatal("Load config gile: ", err.Error())

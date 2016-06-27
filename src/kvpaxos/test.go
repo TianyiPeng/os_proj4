@@ -270,10 +270,11 @@ func Shutdown(address string) string{
 }
 
 func StartServer(argument string) string{
-	cmd := exec.Command("./start_server", argument)
+	cmd := exec.Command("bin/start_server", argument)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := cmd.Start()
+	time.Sleep(100*time.Millisecond)
 	if err != nil {
 		PrintLog(MODE, err.Error())
 		return "error"
@@ -295,10 +296,11 @@ func StopServer(address string) string{
 }
 
 func StopServerByScript(argument string) string{
-	cmd := exec.Command("./stop_server", argument)
+	cmd := exec.Command("bin/stop_server", argument)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := cmd.Start()
+	time.Sleep(100*time.Millisecond)
 	if err != nil {
 		PrintLog(MODE, err.Error())
 		return "error"
@@ -320,7 +322,7 @@ func KillAll() string {
 }
 
 func DecodeConfig() (serverPeers []string) {
-	config_file, err := ioutil.ReadFile("../../conf/settings.conf")
+	config_file, err := ioutil.ReadFile("conf/settings.conf")
 	if err != nil{
 		fmt.Println("Load config file error")
 		log.Fatal("Load config gile: ", err.Error())
